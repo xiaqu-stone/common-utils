@@ -1,0 +1,75 @@
+apply plugin: 'com.android.library'
+
+apply plugin: 'kotlin-android'
+android {
+    compileSdkVersion conf.compileSdkVersion
+
+
+
+    defaultConfig {
+        minSdkVersion conf.minSdkVersion
+        targetSdkVersion conf.targetSdkVersion
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    implementation "com.android.support:appcompat-v7:$support"
+    implementation "com.android.support:support-annotations:$support"
+    testImplementation 'junit:junit:4.12'
+    androidTestImplementation 'com.android.support.test:runner:1.0.2'
+    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation "com.sqq.xiaqu:logs:$logs"
+    implementation "com.sqq.xiaqu:md-lib:$mdLib"
+}
+repositories {
+    mavenCentral()
+}
+
+ext {
+    //Bintray中的仓库名，可以建立多个，为当前包指定一个要上传的仓库即可
+    bintrayRepo = 'maven'
+    //在Bintray库的展示名字
+    bintrayName = 'common-utils'
+
+    //顾名思义，都接触过
+    publishedGroupId = 'com.sqq.xiaqu'
+    //这个两个参数也很容易理解，不过需要说明的就是，这个两个参数以及当前module在AS中的name，三者要保持一致
+    libraryName = 'common-utils'
+    artifact = 'common-utils'
+    //版本号，当组件升级发布时，请升级版本号
+    libraryVersion = '1.0.0'
+
+    //下述参数，你懂的...
+
+    libraryDescription = 'APP常用工具类集合'
+
+    siteUrl = 'https://github.com/xiaqu-stone/common-utils.git'
+    gitUrl = 'https://github.com/xiaqu-stone/common-utils.git'
+
+    developerId = 'stone'
+    developerName = 'xiaqu-stone'
+    developerEmail = 'stone.xiaqu@gmail.com'
+
+    licenseName = 'The Apache Software License, Version 2.0'
+    licenseUrl = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+    allLicenses = ["Apache-2.0"]
+}
+
+apply from: "../install.gradle"
+apply from: "../bintray.gradle"
