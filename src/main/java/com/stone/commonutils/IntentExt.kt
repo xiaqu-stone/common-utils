@@ -44,19 +44,38 @@ fun Context.callPhoneDial(phone: String) {
 }
 
 /**
+ * 打开发短信页面并填充内容
+ */
+fun Context.sendSMS(phone: String, message: String) {
+    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("sms:$phone"))
+    intent.putExtra("sms_body", message)
+    this.startActivity(intent)
+}
+
+/**
  *
  * 跳转去联系人页面，并返回
  * Note：9/18/18 by sqq 跳转返回的时候 接收并处理联系人数据时，需要做运行权限检查，READ_CONTACTS
  */
 fun Context.jumpChooseContact(requestCode: Int) {
-    (this as? Activity)?.startActivityForResult((Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)), requestCode)
+    (this as? Activity)?.startActivityForResult(
+        (Intent(
+            Intent.ACTION_PICK,
+            ContactsContract.Contacts.CONTENT_URI
+        ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)), requestCode
+    )
 }
 
 /**
  * 从图库or相册选图
  */
 fun Context.selectPicFromGallery(requestCode: Int) {
-    (this as? Activity)?.startActivityForResult(Intent(Intent.ACTION_PICK).setDataAndType(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "image/*"), requestCode)
+    (this as? Activity)?.startActivityForResult(
+        Intent(Intent.ACTION_PICK).setDataAndType(
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+            "image/*"
+        ), requestCode
+    )
 }
 
 /**
@@ -78,7 +97,7 @@ fun Context.addPhotoToGallery(photoPath: String?) {
  *
  * @return 当前拍照操作 生成照片对应的URI
  */
-fun Context.takePhoto(requestCode: Int): Uri {
+fun Context.takePhoto(requestCode: Int): Uri? {
     val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)// "android.media.action.IMAGE_CAPTURE"
     val curPhotoUri = this.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, ContentValues())
     intent.putExtra(MediaStore.EXTRA_OUTPUT, curPhotoUri)

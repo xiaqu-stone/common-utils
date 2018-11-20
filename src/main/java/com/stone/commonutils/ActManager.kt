@@ -1,6 +1,8 @@
 package com.stone.commonutils
 
 import android.app.Activity
+import android.app.Application
+import android.os.Bundle
 import java.util.*
 
 /**
@@ -107,21 +109,40 @@ object ActManager {
         stack?.clear()
     }
 
-
-    /*==========下列几个方法 应用在 ActivityLifecycleCallbacks 对应的回调中*/
-
-    fun onActivityCreated(activity: Activity?) {
-        add(activity)
-    }
-
-    fun onActivityDestroyed(activity: Activity?) {
-        remove(activity)
-    }
-
-    fun onActivityResumed(activity: Activity?) {
-        val top = stack?.peek()
-        if (top != activity && !top.isValid()) {
-            stack?.pop()
+    private val mCallbacks = object : Application.ActivityLifecycleCallbacks {
+        override fun onActivityPaused(activity: Activity?) {
         }
+
+        override fun onActivityResumed(activity: Activity?) {
+            val top = stack?.peek()
+            if (top != activity && !top.isValid()) {
+                stack?.pop()
+            }
+        }
+
+        override fun onActivityStarted(activity: Activity?) {
+        }
+
+        override fun onActivityDestroyed(activity: Activity?) {
+            remove(activity)
+        }
+
+        override fun onActivitySaveInstanceState(activity: Activity?, outState: Bundle?) {
+        }
+
+        override fun onActivityStopped(activity: Activity?) {
+        }
+
+        override fun onActivityCreated(activity: Activity?, savedInstanceState: Bundle?) {
+            add(activity)
+        }
+
+    }
+
+    /**
+     * Application 中注册全局的Activity生命周期回调
+     */
+    fun registerActivityLifecycleCallbacks(app: Application) {
+        app.registerActivityLifecycleCallbacks(mCallbacks)
     }
 }
