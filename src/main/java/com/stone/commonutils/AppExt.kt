@@ -7,6 +7,7 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.os.Build
+import android.provider.Settings
 import android.support.annotation.RequiresPermission
 import android.telephony.TelephonyManager
 import com.stone.log.Logs
@@ -24,11 +25,11 @@ import org.jetbrains.anko.ctx
  */
 fun Context.isAppOnForeground(): Boolean {
     val activityManager = this
-            .getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+        .getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
     val packageName = this.packageName
 
     val appProcesses = activityManager
-            ?.runningAppProcesses ?: return false
+        ?.runningAppProcesses ?: return false
     for (appProcess in appProcesses) {
         if (appProcess.processName == packageName && appProcess.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND) return true
     }
@@ -57,6 +58,14 @@ fun Context.getIMEI(): String {
 }
 
 /**
+ * 获取 AndroidId，9774d56d682e549c 为模拟器的常见 androidId
+ */
+fun Context.getAndroidId(): String {
+    return Settings.System.getString(contentResolver, Settings.Secure.ANDROID_ID)
+}
+
+
+/**
  * @param name the name of meta-data
  * @return get the value of meta-data
  */
@@ -64,8 +73,10 @@ fun Context.getMetaDataValue(name: String): String {
     var value: String? = null
     val applicationInfo: ApplicationInfo?
     try {
-        applicationInfo = this.packageManager.getApplicationInfo(this
-                .packageName, PackageManager.GET_META_DATA)
+        applicationInfo = this.packageManager.getApplicationInfo(
+            this
+                .packageName, PackageManager.GET_META_DATA
+        )
         if (applicationInfo?.metaData != null) {
             value = applicationInfo.metaData.getString(name)
         }
@@ -73,8 +84,10 @@ fun Context.getMetaDataValue(name: String): String {
         throw RuntimeException("Could not read the name in the manifest file.", e)
     }
     if (value == null) {
-        throw RuntimeException("The name '" + name
-                + "' is not defined in the manifest file's meta data.")
+        throw RuntimeException(
+            "The name '" + name
+                    + "' is not defined in the manifest file's meta data."
+        )
     }
     return value
 }
