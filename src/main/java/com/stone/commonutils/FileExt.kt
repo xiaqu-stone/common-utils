@@ -50,11 +50,11 @@ fun Bitmap.saveAsyncTo(dest: File, quality: Int = 100, onIOFinished: ((result: B
                 if (this@saveAsyncTo.compress(Bitmap.CompressFormat.PNG, quality, it)) it.flush()
             }
             Logs.d(".saveAsyncTo() called with: ")
-            if (onIOFinished != null) HanderManager.postMainHandler { onIOFinished.invoke(true) }
+            if (onIOFinished != null) HandlerManager.postMainHandler { onIOFinished.invoke(true) }
         }
     } catch (e: IOException) {
         Log.w(TAG, "saveTo: ${e.message}")
-        if (onIOFinished != null) HanderManager.postMainHandler { onIOFinished.invoke(false) }
+        if (onIOFinished != null) HandlerManager.postMainHandler { onIOFinished.invoke(false) }
     }
 }
 

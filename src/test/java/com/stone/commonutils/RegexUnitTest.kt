@@ -29,6 +29,8 @@ class RegexUnitTest {
     @Test
     fun regexHost() {
         assertEquals(true, "ssss://www.google.com".checkHost())
+        assertEquals(true, "http://nkz-testing.kuainiujinke.com".checkHost())
+        println("http://nkz-testing.kuainiujinke.com".checkHost())
         println("http://www.google.com/".matchHost())
         println("颠倒是非http://12.34.56.78/test.html".matchHost())
     }

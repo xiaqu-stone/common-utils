@@ -7,7 +7,7 @@ import android.os.Looper
  * Created By: sqq
  * Created Time: 9/18/18 6:30 PM.
  */
-object HanderManager {
+object HandlerManager {
 
     private val mMainHandler: Handler = Handler(Looper.getMainLooper())
 
@@ -15,7 +15,7 @@ object HanderManager {
         return mMainHandler
     }
 
-    fun postMainHandler(runnable: () -> Unit) {
-        mMainHandler.post { runnable() }
+    fun postMainHandler(delayMillis: Long = 0L, runnable: () -> Unit) {
+        mMainHandler.postDelayed({ runnable() }, delayMillis)
     }
 }
