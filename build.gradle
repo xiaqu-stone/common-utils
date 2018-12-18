@@ -4,10 +4,8 @@ apply plugin: 'kotlin-android'
 android {
     compileSdkVersion conf.compileSdkVersion
 
-
-
     defaultConfig {
-        minSdkVersion conf.minSdkVersion
+        minSdkVersion 15
         targetSdkVersion conf.targetSdkVersion
         versionCode 1
         versionName "1.0"
@@ -53,7 +51,7 @@ ext {
     libraryName = 'common-utils'
     artifact = 'common-utils'
     //版本号，当组件升级发布时，请升级版本号
-    libraryVersion = '1.0.2'
+    libraryVersion = '1.0.3'
 
     //下述参数，你懂的...
 
