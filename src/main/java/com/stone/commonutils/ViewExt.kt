@@ -3,7 +3,10 @@ package com.stone.commonutils
 import android.app.Activity
 import android.content.Context
 import android.support.annotation.IdRes
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
+import android.view.ViewGroup
 
 /**
  * Created By: sqq
@@ -31,3 +34,18 @@ inline fun View.btnClick(@IdRes vararg ids: Int, crossinline callback: (v: View)
 }
 
 
+/**
+ * 操作符扩展 使得ViewGroup获取子View时具有数组的操作性
+ */
+operator fun ViewGroup.get(position: Int): View = getChildAt(position)
+
+/**
+ * 扩展TextView的文案监听器，使得不需要每次都去实现三个方法
+ */
+interface BaseTextWatcher : TextWatcher {
+    override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+
+    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+
+    override fun afterTextChanged(s: Editable?) {}
+}

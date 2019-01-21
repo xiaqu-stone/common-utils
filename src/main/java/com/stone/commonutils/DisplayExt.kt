@@ -22,6 +22,17 @@ fun Context.px2dp(px: Float): Int {
     return (px / scale + 0.5f * if (px >= 0) 1 else -1).toInt()
 }
 
+fun Context.sp2px(sp: Float): Int {
+    val scale = this.resources.displayMetrics.scaledDensity
+    return (sp * scale + 0.5f * if (sp >= 0) 1 else -1).toInt()
+}
+
+fun Context.px2sp(px: Float): Int {
+    val scale = this.resources.displayMetrics.scaledDensity
+    return (px / scale + 0.5f * if (px >= 0) 1 else -1).toInt()
+}
+
+
 /**
  * 单位 px，屏幕的宽高
  */

@@ -1,12 +1,14 @@
 package com.stone.commonutils
 
+import android.text.InputFilter
 import android.widget.EditText
+import android.widget.TextView
 
 /**
  * Created By: sqq
  * Created Time: 8/31/18 7:25 PM.
  *
- * EditText工具类
+ * EditText / TextView 工具类
  */
 
 /**
@@ -21,9 +23,14 @@ fun EditText.setCursorToLast() {
 /**
  * editText 获取焦点
  */
-fun EditText.getFocus() {
+fun TextView.getFocus() {
     this.isFocusable = true
     this.isFocusableInTouchMode = true
     this.requestFocus()
     this.findFocus()
 }
+
+fun TextView.setMaxLength(maxLength:Int){
+    filters = arrayOf<InputFilter>(InputFilter.LengthFilter(maxLength))
+}
+

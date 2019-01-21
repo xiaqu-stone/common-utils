@@ -22,7 +22,7 @@ import java.util.ArrayList;
  * 1. 设备：模拟器 S8 Android8.0 Root
  * 测试：true，执行1000次，耗时 1069 ms，平均每次 1 ms。
  * 2. 设备：模拟器 Android5.0 Root
- * 测试：他人，1000次，耗时 530 ms, 平均每次 0.5 ms。
+ * 测试：true，1000次，耗时 530 ms, 平均每次 0.5 ms。
  * 3. 设备：HTC Android6.0 未Root
  * 测试：false，执行1000次，耗时 88941 ms, 即当前方法平均每次 耗时 89 ms，去除方法内部的log输出，耗时 68956 ms, 平均也仍然远大于 16 ms
  * 4. 设备：XiaoMi Note2 Android8.0 未Root
@@ -85,7 +85,6 @@ public class CheckRootUtil {
         try {
             File file = new File("/system/app/Superuser.apk");
             if (file.exists()) {
-//                Logs.d(TAG, "/system/app/Superuser.apk exist");
                 return true;
             }
         } catch (Exception ignored) {
@@ -107,7 +106,6 @@ public class CheckRootUtil {
             for (String kSuSearchPath : kSuSearchPaths) {
                 f = new File(kSuSearchPath + "su");
                 if (f.exists()) {
-//                    Logs.d(TAG, "find su in : " + kSuSearchPath);
                     return true;
                 }
             }
@@ -127,8 +125,6 @@ public class CheckRootUtil {
     private static boolean checkRootWhichSU() {
         String[] strCmd = new String[]{"/system/xbin/which", "su"};
         ArrayList<String> execResult = executeCommand(strCmd);
-        //            Logs.d(TAG, "execResult=" + execResult.toString());
-//            Logs.d(TAG, "execResult=null");
         return execResult != null;
     }
 
@@ -137,7 +133,6 @@ public class CheckRootUtil {
         ArrayList<String> fullResponse = new ArrayList<>();
         Process localProcess;
         try {
-//            Logs.d(TAG, "to shell exec which for find su :");
             localProcess = Runtime.getRuntime().exec(shellCmd);
         } catch (Exception e) {
             return null;
@@ -145,12 +140,10 @@ public class CheckRootUtil {
         BufferedReader in = new BufferedReader(new InputStreamReader(localProcess.getInputStream()));
         try {
             while ((line = in.readLine()) != null) {
-//                Logs.d(TAG, "–> Line received: " + line);
                 fullResponse.add(line);
             }
         } catch (Exception ignored) {
         }
-//        Logs.d(TAG, "–> Full response was: " + fullResponse);
         return fullResponse;
     }
 
@@ -164,17 +157,13 @@ public class CheckRootUtil {
         Process process = null;
         DataOutputStream os = null;
         try {
-//            Logs.d(TAG, "to exec su");
             process = Runtime.getRuntime().exec("su");
             os = new DataOutputStream(process.getOutputStream());
             os.writeBytes("exit\n");
             os.flush();
             int exitValue = process.waitFor();
-//            Logs.d(TAG, "exitValue=" + exitValue);
             return exitValue == 0;
         } catch (Exception e) {
-//            Logs.d(TAG, "Unexpected error - Here is what I know: "
-//                    + e.getMessage());
             return false;
         } finally {
             try {
@@ -194,45 +183,17 @@ public class CheckRootUtil {
             Logs.d(TAG, "to exec busybox df");
             String[] strCmd = new String[]{"busybox", "df"};
             ArrayList<String> execResult = executeCommand(strCmd);
-            //                Logs.d(TAG, "execResult=" + execResult.toString());
-//                Logs.d(TAG, "execResult=null");
             return execResult != null;
         } catch (Exception e) {
-//            Logs.d(TAG, "Unexpected error - Here is what I know: "
-//                    + e.getMessage());
             return false;
         }
     }
 
     private static synchronized boolean checkAccessRootData() {
         try {
-//            Logs.d(TAG, "to write /data");
             String fileContent = "test_ok";
-//            Boolean writeFlag = writeFile("/data/su_test", fileContent);
-//            if (writeFlag) {
-//                Logs.d(TAG, "write ok");
-//            } else {
-//                Logs.d(TAG, "write failed");
-//            }
-
-//            Logs.d(TAG, "to read /data");
             String strRead = readFile("/data/su_test");
-//            Logs.d(TAG, "strRead=" + strRead);
             return fileContent.equals(strRead);
-        } catch (Exception e) {
-//            Logs.d(TAG, "Unexpected error - Here is what I know: "
-//                    + e.getMessage());
-            return false;
-        }
-    }
-
-    private static Boolean writeFile(String fileName, String message) {
-        try {
-            FileOutputStream fout = new FileOutputStream(fileName);
-            byte[] bytes = message.getBytes();
-            fout.write(bytes);
-            fout.close();
-            return true;
         } catch (Exception e) {
             return false;
         }
