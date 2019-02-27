@@ -2,16 +2,22 @@ package com.stone.commonutils
 
 import android.Manifest
 import android.app.ActivityManager
+import android.app.Application
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.os.Build
+import android.os.Process
 import android.provider.Settings
 import android.support.annotation.RequiresPermission
 import android.telephony.TelephonyManager
 import com.stone.log.Logs
 import org.jetbrains.anko.ctx
+import java.io.BufferedReader
+import java.io.File
+import java.io.FileReader
+
 
 /**
  * Created By: sqq
@@ -25,11 +31,11 @@ import org.jetbrains.anko.ctx
  */
 fun Context.isAppOnForeground(): Boolean {
     val activityManager = this
-        .getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+            .getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
     val packageName = this.packageName
 
     val appProcesses = activityManager
-        ?.runningAppProcesses ?: return false
+            ?.runningAppProcesses ?: return false
     for (appProcess in appProcesses) {
         if (appProcess.processName == packageName && appProcess.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND) return true
     }
@@ -74,8 +80,8 @@ fun Context.getMetaDataValue(name: String): String {
     val applicationInfo: ApplicationInfo?
     try {
         applicationInfo = this.packageManager.getApplicationInfo(
-            this
-                .packageName, PackageManager.GET_META_DATA
+                this
+                        .packageName, PackageManager.GET_META_DATA
         )
         if (applicationInfo?.metaData != null) {
             value = applicationInfo.metaData.getString(name)
@@ -85,8 +91,8 @@ fun Context.getMetaDataValue(name: String): String {
     }
     if (value == null) {
         throw RuntimeException(
-            "The name '" + name
-                    + "' is not defined in the manifest file's meta data."
+                "The name '" + name
+                        + "' is not defined in the manifest file's meta data."
         )
     }
     return value
@@ -140,15 +146,30 @@ fun Context.isAppAlive(): Boolean {
 /**
  * 获取当前进程名称
  */
-fun Context.getProcessName(): String {
-    val am = this.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-    val runningApps = am.runningAppProcesses ?: return ""
-    for (procInfo in runningApps) {
-        if (procInfo.pid == android.os.Process.myPid()) {
-            return procInfo.processName
+fun Context.getProcessNameQ(): String {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        // added in API level 28
+        return Application.getProcessName()
+    } else {
+        val am = this.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val runningApps = am.runningAppProcesses ?: return ""
+        for (procInfo in runningApps) {
+            if (procInfo.pid == android.os.Process.myPid()) {
+                return procInfo.processName
+            }
+        }
+
+        return try {
+            val file = File("/proc/" + Process.myPid() + "/" + "cmdline")
+            val mBufferedReader = BufferedReader(FileReader(file))
+            val processName = mBufferedReader.readLine().trim()
+            mBufferedReader.close()
+            processName
+        } catch (e: Exception) {
+            e.printStackTrace()
+            ""
         }
     }
-    return ""
 }
 
 /**

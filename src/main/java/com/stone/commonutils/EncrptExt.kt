@@ -32,6 +32,19 @@ fun String?.toMD5(): String {
     }
 }
 
+fun String?.toSHA1():String {
+    if (this == null) return "null"
+    return try {
+        (MessageDigest.getInstance("SHA-1").digest(
+                this.toByteArray())).toHex()
+    } catch (e: NoSuchAlgorithmException) {
+        return this
+    } catch (e: UnsupportedEncodingException) {
+        return this
+    }
+}
+
+
 /**
  * 获取文件的MD5值
  *
