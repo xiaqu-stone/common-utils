@@ -2,12 +2,17 @@ package com.stone.commonutils
 
 import android.util.Base64
 import com.stone.log.Logs
-import java.io.File
-import java.io.UnsupportedEncodingException
+import java.io.*
+import java.math.BigInteger
+import java.net.URLDecoder
 import java.net.URLEncoder
-import java.security.DigestInputStream
-import java.security.MessageDigest
-import java.security.NoSuchAlgorithmException
+import java.security.*
+import java.security.spec.InvalidKeySpecException
+import java.security.spec.PKCS8EncodedKeySpec
+import java.security.spec.RSAPublicKeySpec
+import java.security.spec.X509EncodedKeySpec
+import javax.crypto.Cipher
+import javax.crypto.spec.SecretKeySpec
 
 /**
  * Created By: sqq
@@ -32,7 +37,7 @@ fun String?.toMD5(): String {
     }
 }
 
-fun String?.toSHA1():String {
+fun String?.toSHA1(): String {
     if (this == null) return "null"
     return try {
         (MessageDigest.getInstance("SHA-1").digest(
@@ -97,19 +102,22 @@ fun ByteArray.toHex(): String {
  * @return utf-8 转码后格式
  */
 fun String?.toUrlEncoded(): String {
-    if (this == null) return "unknown"
-    val newValue = this.replace("\n", "")
-    for (t in newValue.toCharArray().withIndex()) {
-        if (t.value <= '\u001f' || t.value >= '\u007f') {
-            return try {
-                URLEncoder.encode(newValue, "UTF-8")
-            } catch (e: UnsupportedEncodingException) {
-                e.printStackTrace()
-                "unknown"
-            }
-        }
+    if (this == null) return "null"
+    return try {
+        URLEncoder.encode(this, "UTF-8")
+    } catch (e: Exception) {
+        e.printStackTrace()
+        "unknown"
     }
-    return newValue
+}
+
+fun String?.toUrlDecoded(): String {
+    if (this == null) return "null"
+    return try {
+        URLDecoder.decode(this, "UTF-8")
+    } catch (e: Exception) {
+        "null"
+    }
 }
 
 /**
@@ -121,4 +129,258 @@ fun String.encodeBase64(): String {
 
 fun String.decodeBase64(): String {
     return String(Base64.decode(this, Base64.NO_WRAP))
+}
+
+fun ByteArray.encodeBase64String(): String {
+    return Base64.encodeToString(this, Base64.NO_WRAP)
+}
+
+fun ByteArray.dncodeBase64String(): String {
+    return String(Base64.decode(String(this), Base64.NO_WRAP))
+}
+
+
+object RsaEncrpt {
+    const val RSA = "RSA"
+    /**
+     * 随机生成RSA密钥对
+     * @param keyLength 密钥长度，范围：512～2048  一般1024
+     */
+    fun generateRSAKeyPair(keyLength: Int): KeyPair? {
+        return try {
+            val kpg = KeyPairGenerator.getInstance(RSA)
+            kpg.initialize(keyLength)
+            kpg.genKeyPair()
+        } catch (e: NoSuchAlgorithmException) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    /**
+     * 随机生成RSA密钥对(默认密钥长度为1024)
+     */
+    fun generateRSAKeyPair(): KeyPair? {
+        return generateRSAKeyPair(1024)
+    }
+
+    /**
+     * 用公钥加密
+     * 每次加密的字节数，不能超过密钥的长度值除以 8 减去11
+     *
+     * @param data      需加密数据的byte数据
+     * @param publicKey 公钥
+     * @return 加密后的byte型数据
+     */
+    fun encryptData(data: ByteArray, publicKey: PublicKey): ByteArray? {
+        return try {
+            val cipher = Cipher.getInstance(RSA)
+            // 编码前设定编码方式及密钥
+            cipher.init(Cipher.ENCRYPT_MODE, publicKey)
+            // 传入编码数据并返回编码结果
+            cipher.doFinal(data)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    /**
+     * 用私钥解密
+     *
+     * @param encryptedData 经过encryptedData()加密返回的byte数据
+     * @param privateKey    私钥
+     */
+    fun decryptData(encryptedData: ByteArray, privateKey: PrivateKey): ByteArray? {
+        return try {
+            val cipher = Cipher.getInstance(RSA)
+            cipher.init(Cipher.DECRYPT_MODE, privateKey)
+            cipher.doFinal(encryptedData)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
+     * 通过公钥byte[](publicKey.getEncoded())将公钥还原，适用于RSA算法
+     */
+    @Throws(NoSuchAlgorithmException::class, InvalidKeySpecException::class)
+    fun getPublicKey(keyBytes: ByteArray): PublicKey {
+        val keySpec = X509EncodedKeySpec(keyBytes)
+        val keyFactory = KeyFactory.getInstance(RSA)
+        return keyFactory.generatePublic(keySpec)
+    }
+
+    /**
+     * 通过私钥byte[]将私钥还原，适用于RSA算法
+     */
+    @Throws(NoSuchAlgorithmException::class, InvalidKeySpecException::class)
+    fun getPrivateKey(keyBytes: ByteArray): PrivateKey {
+        val keySpec = PKCS8EncodedKeySpec(keyBytes)
+        val keyFactory = KeyFactory.getInstance(RSA)
+        return keyFactory.generatePrivate(keySpec)
+    }
+
+    /**
+     * 使用N、e值还原公钥
+     */
+    @Throws(NoSuchAlgorithmException::class, InvalidKeySpecException::class)
+    fun getPublicKey(modulus: String, publicExponent: String): PublicKey {
+        val bigIntModulus = BigInteger(modulus)
+        val bigIntPrivateExponent = BigInteger(publicExponent)
+        val keySpec = RSAPublicKeySpec(bigIntModulus, bigIntPrivateExponent)
+        val keyFactory = KeyFactory.getInstance(RSA)
+        return keyFactory.generatePublic(keySpec)
+    }
+
+    /**
+     * 使用N、d值还原私钥
+     */
+    @Throws(NoSuchAlgorithmException::class, InvalidKeySpecException::class)
+    fun getPrivateKey(modulus: String, privateExponent: String): PrivateKey {
+        val bigIntModulus = BigInteger(modulus)
+        val bigIntPrivateExponent = BigInteger(privateExponent)
+        val keySpec = RSAPublicKeySpec(bigIntModulus, bigIntPrivateExponent)
+        val keyFactory = KeyFactory.getInstance(RSA)
+        return keyFactory.generatePrivate(keySpec)
+    }
+
+    /**
+     * 从字符串中加载公钥
+     *
+     * @param publicKeyStr 公钥数据字符串
+     * @throws Exception 加载公钥时产生的异常
+     */
+    @Throws(Exception::class)
+    fun loadPublicKey(publicKeyStr: String): PublicKey {
+        try {
+            val buffer = Base64.decode(publicKeyStr, Base64.NO_WRAP)
+            val keyFactory = KeyFactory.getInstance(RSA)
+            val keySpec = X509EncodedKeySpec(buffer)
+            return keyFactory.generatePublic(keySpec)
+        } catch (e: NoSuchAlgorithmException) {
+            throw Exception("无此算法")
+        } catch (e: InvalidKeySpecException) {
+            throw Exception("公钥非法")
+        } catch (e: NullPointerException) {
+            throw Exception("公钥数据为空")
+        } catch (e: Exception) {
+            throw Exception("公钥数据为空")
+        }
+    }
+
+    /**
+     * 从字符串中加载私钥<br></br>
+     * 加载时使用的是PKCS8EncodedKeySpec（PKCS#8编码的Key指令）。
+     */
+    @Throws(Exception::class)
+    fun loadPrivateKey(privateKeyStr: String): PrivateKey {
+        try {
+            val buffer = Base64.decode(privateKeyStr, Base64.NO_WRAP)
+            // X509EncodedKeySpec keySpec = new X509EncodedKeySpec(buffer);
+            val keySpec = PKCS8EncodedKeySpec(buffer)
+            val keyFactory = KeyFactory.getInstance(RSA)
+            return keyFactory.generatePrivate(keySpec)
+        } catch (e: NoSuchAlgorithmException) {
+            throw Exception("无此算法")
+        } catch (e: InvalidKeySpecException) {
+            throw Exception("私钥非法")
+        } catch (e: NullPointerException) {
+            throw Exception("私钥数据为空")
+        }
+    }
+
+    /**
+     * 读取密钥信息
+     */
+    @Throws(IOException::class)
+    private fun readKey(inputStream: InputStream): String {
+        val br = BufferedReader(InputStreamReader(inputStream))
+        var readLine: String? = br.readLine()
+        val sb = StringBuilder()
+        while (readLine != null) {
+            if (readLine[0] == '-') {
+                continue
+            } else {
+                sb.append(readLine)
+                sb.append('\r')
+            }
+            readLine = br.readLine()
+        }
+        return sb.toString()
+    }
+
+    /**
+     * 从文件中输入流中加载公钥
+     *
+     * @param inputStream 公钥输入流
+     * @throws Exception 加载公钥时产生的异常
+     */
+    @Throws(Exception::class)
+    fun loadPublicKey(inputStream: InputStream): PublicKey {
+        try {
+            return loadPublicKey(readKey(inputStream))
+        } catch (e: IOException) {
+            throw Exception("公钥数据流读取错误")
+        } catch (e: NullPointerException) {
+            throw Exception("公钥输入流为空")
+        }
+    }
+
+    /**
+     * 从文件中加载私钥
+     */
+    @Throws(Exception::class)
+    fun loadPrivateKey(inputStream: InputStream): PrivateKey {
+        try {
+            return loadPrivateKey(readKey(inputStream))
+        } catch (e: IOException) {
+            throw Exception("私钥数据读取错误")
+        } catch (e: NullPointerException) {
+            throw Exception("私钥输入流为空")
+        }
+    }
+}
+
+object AesEncrpt {
+    //算法/工作模式/填充模式
+    private const val CIPHER_ALGORITHM = "AES/ECB/PKCS5Padding"
+
+    fun aesEncrypt(keyStr: String, plainText: String): String {
+        var encrypt: ByteArray? = null
+        try {
+            val key = generateKey(keyStr)
+            val cipher = Cipher.getInstance(CIPHER_ALGORITHM)
+            cipher.init(Cipher.ENCRYPT_MODE, key)
+            encrypt = cipher.doFinal(plainText.toByteArray())
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        return String(Base64.encode(encrypt, Base64.DEFAULT))
+    }
+
+    fun aesDecrypt(keyStr: String, encryptData: String): String {
+        var decrypt: ByteArray? = null
+        try {
+            val key = generateKey(keyStr)
+            val cipher = Cipher.getInstance(CIPHER_ALGORITHM)
+            cipher.init(Cipher.DECRYPT_MODE, key)
+            decrypt = cipher.doFinal(Base64.decode(encryptData, Base64.DEFAULT))
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        decrypt ?: return "null"
+        return String(decrypt).trim { it <= ' ' }
+    }
+
+    private fun generateKey(key: String): Key {
+        try {
+            return SecretKeySpec(key.toByteArray(), "AES")
+        } catch (e: Exception) {
+            e.printStackTrace()
+            throw e
+        }
+    }
+
 }

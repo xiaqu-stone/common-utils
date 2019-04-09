@@ -1,12 +1,15 @@
 package com.stone.commonutils
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.app.Application
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.net.ConnectivityManager
+import android.net.NetworkInfo
+import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Process
 import android.provider.Settings
@@ -14,9 +17,10 @@ import android.support.annotation.RequiresPermission
 import android.telephony.TelephonyManager
 import com.stone.log.Logs
 import org.jetbrains.anko.ctx
-import java.io.BufferedReader
-import java.io.File
-import java.io.FileReader
+import java.io.*
+import java.lang.reflect.InvocationTargetException
+import java.net.NetworkInterface
+import java.net.SocketException
 
 
 /**
@@ -199,3 +203,123 @@ fun Context?.isNetworkAvailable(): Boolean {
     }
     return false
 }
+
+
+@RequiresPermission(Manifest.permission.ACCESS_NETWORK_STATE)
+fun Context.getNetworkState(): String {
+    val connectivityManager = this.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    var state: NetworkInfo.State
+    var networkInfo: NetworkInfo?
+    networkInfo = connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI)
+    if (networkInfo != null) {
+        state = networkInfo.state
+        if (state == NetworkInfo.State.CONNECTED || state == NetworkInfo.State.CONNECTING) {
+            return "wifi"
+        }
+    }
+
+    networkInfo = connectivityManager.getNetworkInfo(ConnectivityManager.TYPE_MOBILE)
+    if (networkInfo != null) {
+        state = networkInfo.state
+        if (state == NetworkInfo.State.CONNECTED || state == NetworkInfo.State.CONNECTING) {
+            return getNetworkType(networkInfo)
+        }
+    }
+    return ""
+}
+
+/**
+ * 获取网络类型
+ *
+ * @param networkInfo
+ * @return
+ */
+fun Context.getNetworkType(networkInfo: NetworkInfo): String {
+    val strNetworkType: String//= null;
+    val strSubTypeName = networkInfo.subtypeName
+    val networkType = networkInfo.subtype
+    when (networkType) {
+        TelephonyManager.NETWORK_TYPE_GPRS, TelephonyManager.NETWORK_TYPE_EDGE, TelephonyManager.NETWORK_TYPE_CDMA, TelephonyManager.NETWORK_TYPE_1xRTT, TelephonyManager.NETWORK_TYPE_IDEN //api<8 : replace by 11
+        -> strNetworkType = "2G"
+        TelephonyManager.NETWORK_TYPE_UMTS, TelephonyManager.NETWORK_TYPE_EVDO_0, TelephonyManager.NETWORK_TYPE_EVDO_A, TelephonyManager.NETWORK_TYPE_HSDPA, TelephonyManager.NETWORK_TYPE_HSUPA, TelephonyManager.NETWORK_TYPE_HSPA, TelephonyManager.NETWORK_TYPE_EVDO_B //api<9 : replace by 14
+            , TelephonyManager.NETWORK_TYPE_EHRPD  //api<11 : replace by 12
+            , TelephonyManager.NETWORK_TYPE_HSPAP  //api<13 : replace by 15
+        -> strNetworkType = "3G"
+        TelephonyManager.NETWORK_TYPE_LTE    //api<11 : replace by 13
+        -> strNetworkType = "4G"
+        else ->
+            // http://baike.baidu.com/item/TD-SCDMA 中国移动 联通 电信 三种3G制式
+            strNetworkType = if (strSubTypeName.equals("TD-SCDMA", ignoreCase = true) || strSubTypeName.equals(
+                            "WCDMA",
+                            ignoreCase = true
+                    ) || strSubTypeName.equals("CDMA2000", ignoreCase = true)
+            ) {
+                "3G"
+            } else {
+                strSubTypeName
+            }
+    }
+    return strNetworkType
+}
+
+
+@SuppressLint("HardwareIds", "PrivateApi")
+fun Context.getMacAddress(): String {
+    val wifiManager = this.getSystemService(Context.WIFI_SERVICE) as WifiManager
+    var strMacAddress: String?
+    strMacAddress = wifiManager.connectionInfo.macAddress ?: ""
+    if (!validMacAddress(strMacAddress)) {
+        var wlan0 = "wlan0"
+        try {
+            val systemPro = Class.forName("android.os.SystemProperties")
+            val get = systemPro.getMethod("get", String::class.java, String::class.java)
+            wlan0 = get.invoke(null, "wifi.interface", "wlan0").toString()
+        } catch (e: ClassNotFoundException) {
+            e.printStackTrace()
+        } catch (e: NoSuchMethodException) {
+            e.printStackTrace()
+        } catch (e: InvocationTargetException) {
+            e.printStackTrace()
+        } catch (e: IllegalAccessException) {
+            e.printStackTrace()
+        }
+        try {
+            val address = NetworkInterface.getByName(wlan0).hardwareAddress
+            val builder = StringBuilder()
+            for (b in address) {
+                builder.append(String.format("%02X:", b))
+            }
+            if (builder.isNotEmpty()) {
+                builder.deleteCharAt(builder.length - 1)
+            }
+            strMacAddress = builder.toString()
+        } catch (e: SocketException) {
+            e.printStackTrace()
+        } catch (e: NullPointerException) {
+            e.printStackTrace()
+        }
+        if (!validMacAddress(strMacAddress)) {
+            try {
+                val pp = Runtime.getRuntime().exec("cat /sys/class/net/$wlan0/address")
+                val ir = InputStreamReader(pp.inputStream)
+                val input = LineNumberReader(ir)
+                input.use { r ->
+                    r.lineSequence().forEach {
+                        strMacAddress += it.trim { it1 ->
+                            it1 <= ' '
+                        }
+                    }
+                }
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+    }
+    return strMacAddress ?: ""
+}
+
+private fun validMacAddress(mac: String?): Boolean {
+    return !(mac.isNullOrEmpty() || "02:00:00:00:00:00" == mac)
+}
+
+

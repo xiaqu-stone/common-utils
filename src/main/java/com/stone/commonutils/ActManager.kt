@@ -85,10 +85,17 @@ object ActManager {
     }
 
     /**
-     * 移除栈顶的Activity
+     * 移除并finish栈中指定数量的Activity
      */
-    fun pop(): Activity? {
-        return stack?.pop()
+    fun pop(count: Int = 1): Unit? {
+        return if (count == 1) {
+            stack?.pop()?.finish()
+        } else {
+            for (i in 0 until count) {
+                stack?.pop()?.finish()
+            }
+            null
+        }
     }
 
     /**
