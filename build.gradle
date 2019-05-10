@@ -1,5 +1,5 @@
 apply plugin: 'com.android.library'
-
+apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-android'
 android {
     compileSdkVersion conf.compileSdkVersion
@@ -32,6 +32,7 @@ dependencies {
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation "org.jetbrains.anko:anko-common:$anko"
     implementation "com.sqq.xiaqu:logs:$logs"
     implementation "com.sqq.xiaqu:md-lib:$mdLib"
 }
@@ -51,7 +52,7 @@ ext {
     libraryName = 'common-utils'
     artifact = 'common-utils'
     //版本号，当组件升级发布时，请升级版本号
-    libraryVersion = '1.0.4'
+    libraryVersion = '1.0.5-6'
 
     //下述参数，你懂的...
 

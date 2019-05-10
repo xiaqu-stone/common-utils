@@ -7,11 +7,17 @@ import android.app.Application
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.NetworkInfo
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Process
+import android.os.Vibrator
 import android.provider.Settings
 import android.support.annotation.RequiresPermission
 import android.telephony.TelephonyManager
@@ -204,6 +210,18 @@ fun Context?.isNetworkAvailable(): Boolean {
     return false
 }
 
+@RequiresPermission(Manifest.permission.ACCESS_NETWORK_STATE)
+fun Context.isNetworkAvailable2(): Boolean {
+    val conn = getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+            ?: return false
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        val capabilities = conn.getNetworkCapabilities(conn.activeNetwork)
+        capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+    } else {
+        isNetworkAvailable()
+    }
+}
+
 
 @RequiresPermission(Manifest.permission.ACCESS_NETWORK_STATE)
 fun Context.getNetworkState(): String {
@@ -322,4 +340,89 @@ private fun validMacAddress(mac: String?): Boolean {
     return !(mac.isNullOrEmpty() || "02:00:00:00:00:00" == mac)
 }
 
+/**
+ * 注册摇一摇监听
+ *
+ * @return 将实际注册进入传感器中的监听对象返回，以便调用者寻找合适的时机解注册unregister
+ */
+@RequiresPermission(Manifest.permission.VIBRATE)
+fun Context.registerShakeListener(onShakeListener: () -> Unit): SensorEventListener? {
+    val manager = getSystemService(Context.SENSOR_SERVICE) as? SensorManager ?: return null
+    val mSensorListener = object : SensorEventListener {
+        private val SPEED_THRESHOLD = 2000
+        // 两次检测的时间间隔
+        private val UPDATE_INTERVAL_TIME = 100
+        private var lastX: Float = 0f
+        private var lastY: Float = 0f
+        private var lastZ: Float = 0f
+        private var lastUpdateTime: Long = 0
+        private var lastInvokeTime: Long = 0
+
+        override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+
+        @SuppressLint("MissingPermission")
+        override fun onSensorChanged(event: SensorEvent?) {
+            event ?: return
+            val currentUpdateTime = System.currentTimeMillis()// 两次检测的时间间隔
+            val timeInterval = currentUpdateTime - lastUpdateTime// 判断是否达到了检测时间间隔
+            if (timeInterval < UPDATE_INTERVAL_TIME) return
+
+            // 现在的时间变成last时间
+            lastUpdateTime = currentUpdateTime// 获得x,y,z坐标
+            val x = event.values[0]
+            val y = event.values[1]
+            val z = event.values[2]// 获得x,y,z的变化值
+            val deltaX = x - lastX
+            val deltaY = y - lastY
+            val deltaZ = z - lastZ// 将现在的坐标变成last坐标
+            lastX = x
+            lastY = y
+            lastZ = z
+//            Logs.d("onSensorChanged: $deltaX, $deltaY, $deltaZ")
+            val speed = Math.sqrt((deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ).toDouble()) / timeInterval * 10000
+//            Logs.i("onSensorChanged: $speed")
+            // 达到速度阀值，发出提示
+            if (speed >= SPEED_THRESHOLD && currentUpdateTime - lastInvokeTime > 2000) {//至少间隔两秒才允许下次触发
+                lastInvokeTime = System.currentTimeMillis()
+                (getSystemService(Context.VIBRATOR_SERVICE) as Vibrator).vibrate(200)
+                onShakeListener()
+            }
+        }
+    }
+    manager.registerListener(mSensorListener, manager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL)
+    return mSensorListener
+}
+
+fun Context.unregisterShakeListener(listener: SensorEventListener?) {
+    listener ?: return
+    val manager = getSystemService(Context.SENSOR_SERVICE) as? SensorManager ?: return
+    manager.unregisterListener(listener)
+}
+
+/**
+ * 判断当前是否处于通话状态（包括：通话中，响铃中）
+ */
+fun Context.isTelephonyCalling(): Boolean {
+    val tm = (getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager) ?: return false
+    return tm.callState == TelephonyManager.CALL_STATE_RINGING || tm.callState == TelephonyManager.CALL_STATE_OFFHOOK
+}
+
+
+///**
+// * 获取当前手机的应用安装列表(package name & app name)
+// */
+//fun Context.getApps(): String {
+//    val pm = this.packageManager ?: return ""
+//    val packages = pm.getInstalledPackages(0) ?: return ""
+//    val list = mutableListOf<AppBean>()
+//    packages.forEach {
+//        // 属于系统应用
+//        // if ((ApplicationInfo.FLAG_SYSTEM and it.applicationInfo.flags) != 0)
+//        //无Icon的应用
+//        //if (it.applicationInfo.loadIcon(pm) == null)
+//        list.add(AppBean(it.packageName, pm.getApplicationLabel(it.applicationInfo)?.toString()
+//                ?: ""))
+//    }
+//    return Gson().toJson(list)
+//}
 

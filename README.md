@@ -1,7 +1,7 @@
 
 
 ```
-implementation "com.sqq.xiaqu:common-utils:1.0.3"
+implementation "com.sqq.xiaqu:common-utils:1.0.4"
 ```
 
 

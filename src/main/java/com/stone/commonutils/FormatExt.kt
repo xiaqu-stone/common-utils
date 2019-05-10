@@ -15,10 +15,27 @@ import java.util.*
 /**
  * 时间戳 格式化
  */
-fun Long.formatDate(format: String): String {
-    if (this == 0L) return ""
+@JvmOverloads
+fun Long.formatDate(format: String = "yyyy-MM-dd HH:mm:ss E"): String {
+    if (this <= 0L) return toString()
     val simpleDateFormat = SimpleDateFormat(format, Locale.CHINA)
     return simpleDateFormat.format(Date(this))
+}
+
+/**
+ * byte -> MB or GB
+ * 将字节大小转换为 M G
+ */
+fun Long.formatFileSize(): String {
+    if (this <= 0L) return toString()
+    val l = this.toDouble()
+    return when {
+        l <= 1024 -> this.toString() + "B"
+        l / 1024 <= 1024 -> (l / 1024).toInt().toString() + "KB"
+        l / 1024 / 1024 <= 1024 -> (l / 1024 / 1024).toInt().toString() + "MB"
+        l / 1024 / 1024 / 1024 <= 1024 -> (l / 1024 / 1024 / 1024).toInt().toString() + "GB"
+        else -> (l / 1024 / 1024 / 1024 / 1024).toInt().toString() + "TB"
+    }
 }
 
 /**

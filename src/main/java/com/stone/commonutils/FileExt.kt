@@ -58,10 +58,9 @@ fun Bitmap.saveAsyncTo(dest: File, quality: Int = 100, onIOFinished: ((result: B
     }
 }
 
-@Suppress("unused")
-        /**
-         * ByteArray to file
-         */
+/**
+ * ByteArray to file
+ */
 fun ByteArray.toFile(dest: File): File {
     try {
         BufferedOutputStream(FileOutputStream(dest)).use {
@@ -85,3 +84,26 @@ private fun checkFile(file: File) {
         file.delete()
     }
 }
+
+/**
+ * 获取File 的占用空间大小
+ *
+ * 若是 单个文件 则直接返回大小
+ * 若是 目录 则进行递归遍历，返回目录中全部文件的大小
+ */
+fun File?.getFileSize(): Long {
+    if (this == null || !this.exists()) return 0L
+    return if (this.isDirectory) {
+        var size = 0L
+        this.listFiles().forEach {
+            size += it.getFileSize()
+        }
+        return size
+    } else {
+        this.length()
+    }
+}
+//
+//fun File?.deleteFile(){
+//
+//}
