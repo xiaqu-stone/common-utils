@@ -27,6 +27,8 @@ import java.io.*
 import java.lang.reflect.InvocationTargetException
 import java.net.NetworkInterface
 import java.net.SocketException
+import java.security.MessageDigest
+import java.security.cert.CertificateFactory
 
 
 /**
@@ -407,6 +409,40 @@ fun Context.isTelephonyCalling(): Boolean {
     return tm.callState == TelephonyManager.CALL_STATE_RINGING || tm.callState == TelephonyManager.CALL_STATE_OFFHOOK
 }
 
+/**
+ * 获取SHA1签名信息
+ */
+fun Context.getSHA1Fingerprint(packageName: String): String {
+    val pm = this.packageManager
+    var result = ""
+    try {
+        var cert: ByteArray? = null
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            val info = pm.getPackageInfo(packageName, PackageManager.GET_SIGNING_CERTIFICATES).signingInfo
+            cert = if (info.hasMultipleSigners()) {
+                info.apkContentsSigners[0].toByteArray()
+            } else {
+                info.signingCertificateHistory[0].toByteArray()
+            }
+        } else {
+            val info = pm.getPackageInfo(packageName, PackageManager.GET_SIGNATURES)
+            if (info.signatures.isNotEmpty()) {
+                cert = info.signatures[0].toByteArray()
+            }
+        }
+        cert ?: return result
+
+        val cf = CertificateFactory.getInstance("X509")
+        val certificate = cf.generateCertificate(ByteArrayInputStream(cert))
+        val digest = MessageDigest.getInstance("SHA-1")
+        val publicKey = digest.digest(certificate.encoded)
+        result = publicKey.toHex()
+
+    } catch (e: Exception) {
+        result = ""
+    }
+    return result
+}
 
 ///**
 // * 获取当前手机的应用安装列表(package name & app name)

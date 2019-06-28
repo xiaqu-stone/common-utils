@@ -90,8 +90,9 @@ fun ByteArray.toHex(): String {
     val hex = StringBuilder(this.size * 2)
     for (b in this) {
 //            println("origin byte is $b, 位运算后 ${b.toInt() and 0xFF}, hex运算之后 ${Integer.toHexString(b.toInt() and 0xFF)}")
-        if ((b.toInt() and 0xFF) < 0x10) hex.append("0")
-        hex.append(Integer.toHexString(b.toInt() and 0xFF))
+        val v = b.toInt() and 0xFF
+        if (v < 0x10) hex.append("0")
+        hex.append(Integer.toHexString(v))
     }
     return hex.toString()
 }

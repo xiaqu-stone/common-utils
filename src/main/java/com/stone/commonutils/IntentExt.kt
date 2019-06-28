@@ -9,6 +9,7 @@ import android.net.Uri
 import android.provider.ContactsContract
 import android.provider.MediaStore
 import android.support.annotation.RequiresPermission
+import android.telephony.SmsManager
 import android.text.TextUtils
 import java.io.File
 
@@ -52,6 +53,13 @@ fun Context.sendSMS(phone: String, message: String) {
     this.startActivity(intent)
 }
 
+@RequiresPermission(Manifest.permission.SEND_SMS)
+fun Context.sendSmsDirectly(phone: String, message: String) {
+    val manager = SmsManager.getDefault()
+    val msgs = manager.divideMessage(message)
+    manager.sendMultipartTextMessage(phone, null, msgs, null, null)
+}
+
 /**
  *
  * 跳转去联系人页面，并返回
@@ -59,10 +67,10 @@ fun Context.sendSMS(phone: String, message: String) {
  */
 fun Context.jumpChooseContact(requestCode: Int) {
     (this as? Activity)?.startActivityForResult(
-        (Intent(
-            Intent.ACTION_PICK,
-            ContactsContract.Contacts.CONTENT_URI
-        ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)), requestCode
+            (Intent(
+                    Intent.ACTION_PICK,
+                    ContactsContract.Contacts.CONTENT_URI
+            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)), requestCode
     )
 }
 
@@ -71,10 +79,10 @@ fun Context.jumpChooseContact(requestCode: Int) {
  */
 fun Context.selectPicFromGallery(requestCode: Int) {
     (this as? Activity)?.startActivityForResult(
-        Intent(Intent.ACTION_PICK).setDataAndType(
-            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-            "image/*"
-        ), requestCode
+            Intent(Intent.ACTION_PICK).setDataAndType(
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                    "image/*"
+            ), requestCode
     )
 }
 
