@@ -2,6 +2,8 @@ package com.stone.commonutils
 
 import com.stone.log.Logs
 import org.jetbrains.anko.doAsync
+import org.json.JSONObject
+import java.lang.reflect.Modifier
 import java.security.SecureRandom
 
 /**
@@ -56,4 +58,66 @@ object QUtil {
         }
         if (isAsync) doAsync { task() } else task()
     }
+
+    fun printOsBuild(): Map<String, String> {
+        val clazz = Class.forName("android.os.Build")
+        val map = mutableMapOf<String, String>()
+        mapClassField(clazz, map)
+        clazz.declaredClasses.forEach {
+            mapClassField(it, map)
+        }
+        val json = JSONObject(map).toString()
+        Logs.json(json)
+        return map
+    }
+
+    fun mapClassField(clazz: Class<*>, map: MutableMap<String, String>) {
+        val cName = clazz.name
+        clazz.declaredFields.forEach {
+            //            Logs.d("mapClassField: ${it.name}")
+            try {
+                it.isAccessible = true
+                val any = it.get(clazz)
+//                Logs.d("mapClassField: isAccessible = ${it.isAccessible}, modifiers = ${it.modifiers}")
+                var value = ""
+                value = when (any) {
+                    is Array<*> -> {
+                        value += "["
+                        any.forEach { l ->
+                            //                        Logs.i("mapClassField: $l")
+                            value += l.toString() + ", "
+                        }
+                        (if (value.endsWith(", ", true)) value.substring(0, value.length - 2) else value) + "]"
+                    }
+                    is List<*> -> {
+                        value += "["
+                        any.forEach { l ->
+                            //                        Logs.i("mapClassField: $l")
+                            value += l.toString() + ", "
+                        }
+                        (if (value.endsWith(", ", true)) value.substring(0, value.length - 2) else value) + "]"
+                    }
+                    else -> any.toString()
+                }
+
+                var modifier = ""
+
+                modifier += when {
+                    Modifier.isPrivate(it.modifiers) -> "private "
+                    Modifier.isProtected(it.modifiers) -> "protected "
+                    Modifier.isPublic(it.modifiers) -> "public "
+                    else -> "default "
+                }
+
+                if (Modifier.isFinal(it.modifiers)) modifier += "final "
+                if (Modifier.isStatic(it.modifiers)) modifier += "static "
+
+                map["$cName.${it.name}:::$modifier"] = value
+            } catch (e: Exception) {
+                Logs.w("mapClassField: ${it.name},isAccessible = ${it.isAccessible}, modifiers = ${it.modifiers}")
+                e.printStackTrace()
+            }
+        }
+    }
+
 }
