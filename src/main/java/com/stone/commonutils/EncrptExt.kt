@@ -136,13 +136,15 @@ fun ByteArray.encodeBase64String(): String {
     return Base64.encodeToString(this, Base64.NO_WRAP)
 }
 
-fun ByteArray.dncodeBase64String(): String {
+fun ByteArray.decodeBase64String(): String {
     return String(Base64.decode(String(this), Base64.NO_WRAP))
 }
 
 
-object RsaEncrpt {
+object RsaEncrypt {
+    //    const val RSA = "RSA/ECB/PKCS1Padding"
     const val RSA = "RSA"
+
     /**
      * 随机生成RSA密钥对
      * @param keyLength 密钥长度，范围：512～2048  一般1024
@@ -187,6 +189,132 @@ object RsaEncrpt {
     }
 
     /**
+     * 分段加密
+     *
+     * 注意 ByteData 过大时，会导致OOM
+     */
+    fun encryptBigData(source: ByteArray, publicKey: PublicKey, keyLength: Int): ByteArray? {
+        return try {//可支持的最大加密长度
+            val encryptBlock = keyLength / 8 - 11
+            //需要分成多少段
+            var nBlock = source.size / encryptBlock
+            if (source.size % encryptBlock != 0) nBlock += 1
+            Logs.d("encryptBigData: nBlock:$nBlock, lengthBlock:$encryptBlock")
+            //输出Buffer
+            val baos = ByteArrayOutputStream(nBlock * encryptBlock)
+            val cipher = Cipher.getInstance(RSA)
+            cipher.init(Cipher.ENCRYPT_MODE, publicKey)
+            var offset = 0
+            while (offset < source.size) {
+                var inputLen = source.size - offset
+                if (inputLen > encryptBlock) inputLen = encryptBlock
+                val encryptData = cipher.doFinal(source, offset, inputLen)
+                baos.write(encryptData)
+                offset += encryptBlock
+            }
+            val toByteArray = baos.toByteArray()
+            baos.close()
+            toByteArray
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+
+    fun encryptBigData(source: File, destEncrypt: File, publicKey: PublicKey, keyLength: Int) {
+        return try {//可支持的最大加密长度
+            if (!source.exists()) return
+            val encryptBlock = keyLength / 8 - 11
+            val bis = BufferedInputStream(FileInputStream(source))
+            if (!destEncrypt.parentFile.exists()) {
+                destEncrypt.parentFile.mkdirs()
+            }
+
+            if (!destEncrypt.exists()) destEncrypt.createNewFile()
+
+            val bos = BufferedOutputStream(FileOutputStream(destEncrypt))
+            val blockData = ByteArray(encryptBlock)
+            val cipher = Cipher.getInstance(RSA)
+            cipher.init(Cipher.ENCRYPT_MODE, publicKey)
+            var read = bis.read(blockData)
+            while (read != -1) {
+                val encryptData = cipher.doFinal(blockData, 0, read)
+                bos.write(encryptData)
+                read = bis.read(blockData)
+            }
+            bos.flush()
+            bis.close()
+            bos.close()
+            Logs.d("encryptBigData: 加密成功")
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    fun decryptBigData(source: File, destDecrypt: File, privateKey: PrivateKey, keyLength: Int) {
+        return try {//可支持的最大加密长度
+            if (!source.exists()) return
+            val decryptBlock = keyLength / 8
+            val bis = BufferedInputStream(FileInputStream(source))
+            if (!destDecrypt.parentFile.exists()) {
+                destDecrypt.parentFile.mkdirs()
+            }
+            if (!destDecrypt.exists()) destDecrypt.createNewFile()
+            val bos = BufferedOutputStream(FileOutputStream(destDecrypt))
+            val blockData = ByteArray(decryptBlock)
+            val cipher = Cipher.getInstance(RSA)
+            cipher.init(Cipher.DECRYPT_MODE, privateKey)
+            var read = bis.read(blockData)
+            while (read != -1) {
+                val encryptData = cipher.doFinal(blockData, 0, read)
+                bos.write(encryptData)
+                read = bis.read(blockData)
+            }
+            bos.flush()
+            bis.close()
+            bos.close()
+            Logs.d("decryptBigData: 解密成功")
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    /**
+     * 分段解密
+     *
+     * 注意 ByteData OOM
+     */
+    fun decryptBigData(source: ByteArray, privateKey: PrivateKey, keyLength: Int): ByteArray? {
+        return try {//可支持的最大加密长度
+            val decryptBlock = keyLength / 8
+            //需要分成多少段
+            var nBlock = source.size / decryptBlock
+            if (source.size % decryptBlock != 0) nBlock += 1
+            Logs.d("encryptBigData: nBlock:$nBlock, lengthBlock:$decryptBlock")
+            //输出Buffer
+            val baos = ByteArrayOutputStream(nBlock * decryptBlock)
+            val cipher = Cipher.getInstance(RSA)
+            cipher.init(Cipher.DECRYPT_MODE, privateKey)
+            var offset = 0
+            while (offset < source.size) {
+                var inputLen = source.size - offset
+                if (inputLen > decryptBlock) inputLen = decryptBlock
+                val decryptData = cipher.doFinal(source, offset, inputLen)
+                baos.write(decryptData)
+                offset += decryptBlock
+            }
+            val toByteArray = baos.toByteArray()
+            baos.close()
+            toByteArray
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+
+    /**
      * 用私钥解密
      *
      * @param encryptedData 经过encryptedData()加密返回的byte数据
@@ -198,6 +326,7 @@ object RsaEncrpt {
             cipher.init(Cipher.DECRYPT_MODE, privateKey)
             cipher.doFinal(encryptedData)
         } catch (e: Exception) {
+            e.printStackTrace()
             null
         }
     }

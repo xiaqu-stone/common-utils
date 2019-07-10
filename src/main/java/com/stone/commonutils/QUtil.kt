@@ -43,18 +43,19 @@ object QUtil {
      * 输出一段程序的执行时间
      * @param times 指定程序执行多少次
      * @param isAsync 是否开启子线程中去执行
+     * @param tag 当多线程执行时，用以区分log输出
      * @param codeFun 将被执行的程序
      */
     @JvmOverloads
-    fun logDuration(times: Int = 1, isAsync: Boolean = true, codeFun: () -> Unit) {
+    fun logDuration(times: Int = 1, isAsync: Boolean = true, tag: String = "", codeFun: () -> Unit) {
         val task = {
             val start = System.currentTimeMillis()
-            Logs.i("logDuration: the start is $start >>>>>>>>>>>>>>>>>>")
+            Logs.i("logDuration: 【$tag】 the start is $start >>>>>>>>>>>>>>>>>>")
             for (i in 1..times) {
                 codeFun()
             }
             val end = System.currentTimeMillis()
-            Logs.i("logDuration: the end is $end and duration is {${end - start}} <<<<<<<<<<<<<<<<<<<<<<")
+            Logs.i("logDuration: 【$tag】 the end is $end and duration is {${end - start}} <<<<<<<<<<<<<<<<<<<<<<")
         }
         if (isAsync) doAsync { task() } else task()
     }
@@ -111,7 +112,7 @@ object QUtil {
 
                 if (Modifier.isFinal(it.modifiers)) modifier += "final "
                 if (Modifier.isStatic(it.modifiers)) modifier += "static "
-
+                Logs.d("mapClassField: $cName.${it.name}|$value|")
                 map["$cName.${it.name}:::$modifier"] = value
             } catch (e: Exception) {
                 Logs.w("mapClassField: ${it.name},isAccessible = ${it.isAccessible}, modifiers = ${it.modifiers}")
@@ -119,5 +120,6 @@ object QUtil {
             }
         }
     }
+
 
 }

@@ -52,7 +52,7 @@ ext {
     libraryName = 'common-utils'
     artifact = 'common-utils'
     //版本号，当组件升级发布时，请升级版本号
-    libraryVersion = '1.0.5-7'
+    libraryVersion = '1.0.5-9'
 
     //下述参数，你懂的...
 
