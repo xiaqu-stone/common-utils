@@ -8,6 +8,7 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.ContactsContract
 import android.provider.MediaStore
+import android.provider.Settings
 import android.support.annotation.RequiresPermission
 import android.telephony.SmsManager
 import android.text.TextUtils
@@ -111,5 +112,12 @@ fun Context.takePhoto(requestCode: Int): Uri? {
     intent.putExtra(MediaStore.EXTRA_OUTPUT, curPhotoUri)
     (this as? Activity)?.startActivityForResult(intent, requestCode)
     return curPhotoUri
+}
+
+fun Context.startPermissionSetting() {
+    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+    intent.data = Uri.fromParts("package", packageName, null)
+    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    startActivity(intent)
 }
 

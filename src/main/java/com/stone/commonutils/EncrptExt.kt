@@ -12,6 +12,7 @@ import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.RSAPublicKeySpec
 import java.security.spec.X509EncodedKeySpec
 import javax.crypto.Cipher
+import javax.crypto.CipherOutputStream
 import javax.crypto.spec.SecretKeySpec
 
 /**
@@ -137,7 +138,7 @@ fun ByteArray.encodeBase64String(): String {
 }
 
 fun ByteArray.decodeBase64String(): String {
-    return String(Base64.decode(String(this), Base64.NO_WRAP))
+    return String(Base64.decode(this, Base64.NO_WRAP))
 }
 
 
@@ -238,11 +239,11 @@ object RsaEncrypt {
             val cipher = Cipher.getInstance(RSA)
             cipher.init(Cipher.ENCRYPT_MODE, publicKey)
             var read = bis.read(blockData)
-            while (read != -1) {
+            do {
                 val encryptData = cipher.doFinal(blockData, 0, read)
                 bos.write(encryptData)
                 read = bis.read(blockData)
-            }
+            } while (read != -1)
             bos.flush()
             bis.close()
             bos.close()
@@ -266,11 +267,11 @@ object RsaEncrypt {
             val cipher = Cipher.getInstance(RSA)
             cipher.init(Cipher.DECRYPT_MODE, privateKey)
             var read = bis.read(blockData)
-            while (read != -1) {
+            do {
                 val encryptData = cipher.doFinal(blockData, 0, read)
                 bos.write(encryptData)
                 read = bis.read(blockData)
-            }
+            } while (read != -1)
             bos.flush()
             bis.close()
             bos.close()
@@ -477,17 +478,81 @@ object AesEncrpt {
     private const val CIPHER_ALGORITHM = "AES/ECB/PKCS5Padding"
 
     fun aesEncrypt(keyStr: String, plainText: String): String {
+        val byteEncrypt = aesEncrypt(keyStr, plainText.toByteArray()) ?: return plainText
+        return String(Base64.encode(byteEncrypt, Base64.DEFAULT))
+    }
+
+    fun aesEncrypt(keyStr: String, source: ByteArray): ByteArray? {
         var encrypt: ByteArray? = null
         try {
             val key = generateKey(keyStr)
             val cipher = Cipher.getInstance(CIPHER_ALGORITHM)
             cipher.init(Cipher.ENCRYPT_MODE, key)
-            encrypt = cipher.doFinal(plainText.toByteArray())
+            encrypt = cipher.doFinal(source)
+        } catch (e: Exception) {
+//            e.printStackTrace()
+        }
+        return encrypt
+    }
+
+    fun aesEncrypt(keyStr: String, source: File, dest: File) {
+
+        try {
+            val key = generateKey(keyStr)
+            val cipher = Cipher.getInstance(CIPHER_ALGORITHM)
+            cipher.init(Cipher.ENCRYPT_MODE, key)
+
+            if (!dest.parentFile.exists()) {
+                dest.parentFile.mkdirs()
+            }
+            if (dest.isDirectory) dest.delete()
+            if (!dest.exists()) dest.createNewFile()
+
+            val bis = FileInputStream(source)
+            val bos = FileOutputStream(dest)
+            val buffer = ByteArray(1024)
+            val cos = CipherOutputStream(bos, cipher)
+            var read = bis.read(buffer)
+            do {
+                cos.write(buffer, 0, read)
+                read = bis.read(buffer)
+            } while (read != -1)
+            cos.flush()
+            cos.close()
+            bis.close()
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
 
-        return String(Base64.encode(encrypt, Base64.DEFAULT))
+    fun aesDecrypt(keyStr: String, source: File, dest: File) {
+
+        try {
+            val key = generateKey(keyStr)
+            val cipher = Cipher.getInstance(CIPHER_ALGORITHM)
+            cipher.init(Cipher.DECRYPT_MODE, key)
+
+            if (!dest.parentFile.exists()) {
+                dest.parentFile.mkdirs()
+            }
+            if (dest.isDirectory) dest.delete()
+            if (!dest.exists()) dest.createNewFile()
+
+            val bis = BufferedInputStream(FileInputStream(source))
+            val bos = BufferedOutputStream(FileOutputStream(dest))
+            val cos = CipherOutputStream(bos, cipher)
+            val buffer = ByteArray(1024)
+            var read = bis.read(buffer)
+            do {
+                cos.write(buffer, 0, read)
+                read = bis.read(buffer)
+            } while (read != -1)
+            cos.flush()
+            cos.close()
+            bis.close()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     fun aesDecrypt(keyStr: String, encryptData: String): String {
@@ -508,7 +573,7 @@ object AesEncrpt {
         try {
             return SecretKeySpec(key.toByteArray(), "AES")
         } catch (e: Exception) {
-            e.printStackTrace()
+//            e.printStackTrace()
             throw e
         }
     }

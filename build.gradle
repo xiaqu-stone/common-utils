@@ -1,6 +1,6 @@
 apply plugin: 'com.android.library'
-apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
 android {
     compileSdkVersion conf.compileSdkVersion
 
@@ -52,7 +52,7 @@ ext {
     libraryName = 'common-utils'
     artifact = 'common-utils'
     //版本号，当组件升级发布时，请升级版本号
-    libraryVersion = '1.0.5-9'
+    libraryVersion = '1.0.5-12'
 
     //下述参数，你懂的...
 

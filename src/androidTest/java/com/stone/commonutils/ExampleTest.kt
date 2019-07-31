@@ -23,4 +23,9 @@ class ExampleTest {
         Logs.i(base64String)
         assertEquals("", base64String)
     }
+
+    @Test
+    fun testAes() {
+
+    }
 }

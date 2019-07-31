@@ -436,8 +436,15 @@ fun Context.getSHA1Fingerprint(packageName: String): String {
         val certificate = cf.generateCertificate(ByteArrayInputStream(cert))
         val digest = MessageDigest.getInstance("SHA-1")
         val publicKey = digest.digest(certificate.encoded)
-        result = publicKey.toHex()
 
+        val hex = StringBuilder(publicKey.size * 2)
+        for (b in publicKey) {
+            val v = b.toInt() and 0xFF
+            if (v < 0x10) hex.append("0")
+            hex.append(Integer.toHexString(v)).append(":")
+        }
+        hex.deleteCharAt(hex.length - 1)
+        result = hex.toString().toUpperCase()
     } catch (e: Exception) {
         result = ""
     }

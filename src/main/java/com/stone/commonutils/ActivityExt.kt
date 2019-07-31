@@ -2,6 +2,7 @@ package com.stone.commonutils
 
 import android.app.Activity
 import android.os.Build
+import android.support.v7.app.AppCompatActivity
 
 /**
  * Created By: sqq
@@ -24,4 +25,40 @@ fun Activity?.isValid(): Boolean {
             !isFinishing
         }
     } else false
+}
+
+fun Activity?.getActivityTitle(): String {
+    if (this == null) return ""
+    var title = ""
+    try {
+        title = getToolbarTitle()
+        if (title.isEmpty()) {
+            if (packageManager != null) {
+                val info = packageManager.getActivityInfo(componentName, 0)
+                if (info != null) {
+                    title = info.loadLabel(packageManager).toString()
+                }
+            }
+        }
+    } catch (e: Exception) {
+    }
+    return title
+}
+
+fun Activity?.getToolbarTitle(): String {
+    if (this == null) return ""
+    if (actionBar != null) {
+        if (!actionBar?.title.isNullOrEmpty()) {
+            return actionBar!!.title.toString()
+        }
+    } else {
+        if (this is AppCompatActivity) {
+            if (supportActionBar != null) {
+                if (!supportActionBar?.title.isNullOrEmpty()) {
+                    return supportActionBar!!.title.toString()
+                }
+            }
+        }
+    }
+    return ""
 }
