@@ -143,7 +143,7 @@ fun ByteArray.decodeBase64String(): String {
 
 
 object RsaEncrypt {
-    //    const val RSA = "RSA/ECB/PKCS1Padding"
+    const val RSA_CIPHER = "RSA/None/PKCS1Padding"
     const val RSA = "RSA"
 
     /**
@@ -178,7 +178,7 @@ object RsaEncrypt {
      */
     fun encryptData(data: ByteArray, publicKey: PublicKey): ByteArray? {
         return try {
-            val cipher = Cipher.getInstance(RSA)
+            val cipher = Cipher.getInstance(RSA_CIPHER)
             // 编码前设定编码方式及密钥
             cipher.init(Cipher.ENCRYPT_MODE, publicKey)
             // 传入编码数据并返回编码结果
@@ -203,7 +203,7 @@ object RsaEncrypt {
             Logs.d("encryptBigData: nBlock:$nBlock, lengthBlock:$encryptBlock")
             //输出Buffer
             val baos = ByteArrayOutputStream(nBlock * encryptBlock)
-            val cipher = Cipher.getInstance(RSA)
+            val cipher = Cipher.getInstance(RSA_CIPHER)
             cipher.init(Cipher.ENCRYPT_MODE, publicKey)
             var offset = 0
             while (offset < source.size) {
@@ -236,7 +236,7 @@ object RsaEncrypt {
 
             val bos = BufferedOutputStream(FileOutputStream(destEncrypt))
             val blockData = ByteArray(encryptBlock)
-            val cipher = Cipher.getInstance(RSA)
+            val cipher = Cipher.getInstance(RSA_CIPHER)
             cipher.init(Cipher.ENCRYPT_MODE, publicKey)
             var read = bis.read(blockData)
             do {
@@ -264,7 +264,7 @@ object RsaEncrypt {
             if (!destDecrypt.exists()) destDecrypt.createNewFile()
             val bos = BufferedOutputStream(FileOutputStream(destDecrypt))
             val blockData = ByteArray(decryptBlock)
-            val cipher = Cipher.getInstance(RSA)
+            val cipher = Cipher.getInstance(RSA_CIPHER)
             cipher.init(Cipher.DECRYPT_MODE, privateKey)
             var read = bis.read(blockData)
             do {
@@ -295,7 +295,7 @@ object RsaEncrypt {
             Logs.d("encryptBigData: nBlock:$nBlock, lengthBlock:$decryptBlock")
             //输出Buffer
             val baos = ByteArrayOutputStream(nBlock * decryptBlock)
-            val cipher = Cipher.getInstance(RSA)
+            val cipher = Cipher.getInstance(RSA_CIPHER)
             cipher.init(Cipher.DECRYPT_MODE, privateKey)
             var offset = 0
             while (offset < source.size) {
@@ -323,7 +323,7 @@ object RsaEncrypt {
      */
     fun decryptData(encryptedData: ByteArray, privateKey: PrivateKey): ByteArray? {
         return try {
-            val cipher = Cipher.getInstance(RSA)
+            val cipher = Cipher.getInstance(RSA_CIPHER)
             cipher.init(Cipher.DECRYPT_MODE, privateKey)
             cipher.doFinal(encryptedData)
         } catch (e: Exception) {
@@ -479,7 +479,7 @@ object AesEncrpt {
 
     fun aesEncrypt(keyStr: String, plainText: String): String {
         val byteEncrypt = aesEncrypt(keyStr, plainText.toByteArray()) ?: return plainText
-        return String(Base64.encode(byteEncrypt, Base64.DEFAULT))
+        return String(Base64.encode(byteEncrypt, Base64.NO_WRAP))
     }
 
     fun aesEncrypt(keyStr: String, source: ByteArray): ByteArray? {
@@ -561,7 +561,7 @@ object AesEncrpt {
             val key = generateKey(keyStr)
             val cipher = Cipher.getInstance(CIPHER_ALGORITHM)
             cipher.init(Cipher.DECRYPT_MODE, key)
-            decrypt = cipher.doFinal(Base64.decode(encryptData, Base64.DEFAULT))
+            decrypt = cipher.doFinal(Base64.decode(encryptData, Base64.NO_WRAP))
         } catch (e: Exception) {
             e.printStackTrace()
         }

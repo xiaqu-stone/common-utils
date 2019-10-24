@@ -2,6 +2,7 @@ package com.stone.commonutils
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.annotation.TargetApi
 import android.app.ActivityManager
 import android.app.Application
 import android.content.Context
@@ -20,9 +21,11 @@ import android.os.Process
 import android.os.Vibrator
 import android.provider.Settings
 import android.support.annotation.RequiresPermission
+import android.telecom.TelecomManager
 import android.telephony.TelephonyManager
 import com.stone.log.Logs
 import org.jetbrains.anko.ctx
+import org.json.JSONObject
 import java.io.*
 import java.lang.reflect.InvocationTargetException
 import java.net.NetworkInterface
@@ -469,3 +472,24 @@ fun Context.getSHA1Fingerprint(packageName: String): String {
 //    return Gson().toJson(list)
 //}
 
+
+fun Context.getInstalledAppInfos() {
+    val packages = packageManager.getInstalledPackages(0)
+    val map = mutableMapOf<String, String>()
+    packages.forEach {
+        val name = packageManager.getApplicationLabel(it.applicationInfo).toString()
+        map[name] = it.packageName + "【${it.versionName}】"
+    }
+//    val json = Gson().toJson(map)
+    val json = JSONObject(map).toString()
+    Logs.json(json)
+}
+
+@TargetApi(Build.VERSION_CODES.O)
+@RequiresPermission(value = android.Manifest.permission.ANSWER_PHONE_CALLS)
+fun Context.autoAnswerCall() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        val tm = getSystemService(Context.TELECOM_SERVICE) as? TelecomManager ?: return
+        tm.acceptRingingCall()
+    }
+}
