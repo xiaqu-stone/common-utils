@@ -1,5 +1,6 @@
 package com.stone.commonutils
 
+import android.database.Cursor
 import com.stone.log.Logs
 import org.jetbrains.anko.doAsync
 import org.json.JSONObject
@@ -119,6 +120,18 @@ object QUtil {
                 e.printStackTrace()
             }
         }
+    }
+
+    fun recursiveCursorColumn(cursor: Cursor) {
+        val count = cursor.columnCount
+        val map = mutableMapOf<String, String?>()
+        for (c in 0 until count) {
+            val columnName = cursor.getColumnName(c)
+            val columnValue = cursor.getString(c)
+            map[columnName] = columnValue
+        }
+        val json = JSONObject(map).toString()
+        Logs.json(json)
     }
 
 
